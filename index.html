@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FrostKeeper UK - Freezer Inventory Tracker</title>
+    <!-- PWA Manifest & Theme Color -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -77,7 +80,7 @@
                 </div>
                 <div>
                     <h1 class="text-3xl sm:text-4xl font-extrabold font-display tracking-wide text-sky-900 drop-shadow-sm">FrostKeeper 🧊</h1>
-                    <p class="text-sm sm:text-base font-bold text-sky-700 tracking-wide">Your UK Freezer Inventory</p>
+                    <p class="text-sm sm:text-base font-bold text-sky-700 tracking-wide">Your Freezer Inventory</p>
                 </div>
             </div>
 
@@ -176,8 +179,6 @@
                         <option value="Pies, Pasties & Bakery">🥧 Pies, Pasties & Bakery</option>
                         <option value="Pizza & Garlic Bread">🍕 Pizza & Garlic Bread</option>
                         <option value="Desserts & Ice Cream">🍰 Desserts & Ice Cream</option>
-                        <option value="Breakfast & Bakery">🥐 Breakfast & Bakery</option>
-                        <option value="Party Food & Snacks">🍢 Party Food & Snacks</option>
                         <option value="Homemade Meals & Soups">🍲 Homemade Meals & Soups</option>
                         <option value="Other / Miscellaneous">📦 Other / Miscellaneous</option>
                     </select>
@@ -279,13 +280,13 @@
 
         <!-- PAGE 5: WHAT'S FOR DINNER PAGE -->
         <section id="meals-page" class="page-view space-y-6 hidden">
-            <div class="bg-gradient-to-r from-rose-500 via-amber-500 to-sky-600 text-white rounded-3xl p-6 sm:p-8 shadow-md">
+            <div class="bg-gradient-to-r from-rose-500 to-amber-500 text-white rounded-3xl p-6 sm:p-8 shadow-md">
                 <div class="max-w-2xl space-y-3">
                     <h2 class="text-3xl font-black font-display flex items-center gap-3">
                         <i class="fa-solid fa-utensils"></i> What's For Dinner?
                     </h2>
                     <p class="text-base font-semibold text-rose-50">
-                        Smart dinner generator matching what's inside your freezer with standard UK cupboard & fridge staples (Eggs, Beans, Mushrooms, Bread, Curry Sauce & Rice)!
+                        Smart meal generator analyzing ingredients currently inside your freezers paired with essential cupboard & fridge staples!
                     </p>
                     <button onclick="generateMealSuggestions()" class="fun-btn px-6 py-3 bg-white text-rose-600 font-black font-display rounded-2xl shadow hover:bg-rose-50 flex items-center gap-2">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Fresh Meal Ideas
@@ -293,7 +294,7 @@
                 </div>
             </div>
 
-            <div id="mealSuggestionsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            <div id="mealSuggestionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </section>
 
         <!-- PAGE 6: SHOPPING LIST PAGE -->
@@ -338,23 +339,21 @@
                 <form id="itemForm" onsubmit="handleFormSubmit(event)" class="space-y-5">
                     <input type="hidden" id="itemId">
 
-                    <!-- Food Input with Interactive Dropdown Autocomplete -->
+                    <!-- Autocomplete Input -->
                     <div class="relative">
                         <label class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
                             Food Item Name <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <input type="text" id="foodNameInput" required autocomplete="off" oninput="handleFoodInput(event)" onfocus="handleFoodInput(event)"
-                                placeholder="Type e.g. Chips, Chicken Nuggets, Fish Fingers, Aunt Bessie's..." 
+                            <input type="text" id="foodNameInput" required autocomplete="off" oninput="handleAutocomplete()"
+                                placeholder="Type e.g. Chips, Chicken Breasts, Fish Fingers..." 
                                 class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 focus:bg-white rounded-2xl px-4 py-3.5 text-base sm:text-lg text-slate-900 placeholder-slate-400 font-bold outline-none transition">
                             <button type="button" onclick="clearFoodInput()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-700">
                                 <i class="fa-solid fa-xmark text-lg"></i>
                             </button>
                         </div>
-                        <!-- Autocomplete Suggestions Menu -->
-                        <div id="autocompleteMenu" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border-2 border-sky-400 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-100">
-                            <!-- Items auto injected here -->
-                        </div>
+                        <!-- Dropdown Suggestions -->
+                        <div id="autocompleteList" class="hidden absolute z-50 left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white border-2 border-sky-400 rounded-2xl shadow-xl divide-y divide-slate-100"></div>
                     </div>
 
                     <div>
@@ -370,8 +369,6 @@
                             <option value="Pies, Pasties & Bakery">🥧 Pies, Pasties & Bakery</option>
                             <option value="Pizza & Garlic Bread">🍕 Pizza & Garlic Bread</option>
                             <option value="Desserts & Ice Cream">🍰 Desserts & Ice Cream</option>
-                            <option value="Breakfast & Bakery">🥐 Breakfast & Bakery</option>
-                            <option value="Party Food & Snacks">🍢 Party Food & Snacks</option>
                             <option value="Homemade Meals & Soups">🍲 Homemade Meals & Soups</option>
                             <option value="Other / Miscellaneous">📦 Other / Miscellaneous</option>
                         </select>
@@ -512,117 +509,6 @@
 
     <!-- App Logic JavaScript -->
     <script>
-        // Extensive UK Freezer Items Database (Iceland, Tesco, Farmfoods style)
-        const UK_FREEZER_ITEMS = [
-            // Potato Products & Chips
-            { name: "Oven Chips", cat: "Potato Products & Chips" },
-            { name: "McCain Straight Cut Chips", cat: "Potato Products & Chips" },
-            { name: "McCain Curly Fries", cat: "Potato Products & Chips" },
-            { name: "Aunt Bessie's Roast Potatoes", cat: "Potato Products & Chips" },
-            { name: "Potato Waffles", cat: "Potato Products & Chips" },
-            { name: "Hash Browns", cat: "Potato Products & Chips" },
-            { name: "Crinkle Cut Chips", cat: "Potato Products & Chips" },
-            { name: "Skinny Fries", cat: "Potato Products & Chips" },
-            { name: "Potato Croquettes", cat: "Potato Products & Chips" },
-            { name: "Mashed Potato Pellets", cat: "Potato Products & Chips" },
-            { name: "Sweet Potato Fries", cat: "Potato Products & Chips" },
-            { name: "Potato Smiles", cat: "Potato Products & Chips" },
-
-            // Meat & Poultry
-            { name: "Chicken Breasts", cat: "Meat & Poultry" },
-            { name: "Chicken Nuggets", cat: "Meat & Poultry" },
-            { name: "Bernard Matthews Turkey Dinosaurs", cat: "Meat & Poultry" },
-            { name: "Beef Burgers", cat: "Meat & Poultry" },
-            { name: "Pork Sausages", cat: "Meat & Poultry" },
-            { name: "Richmond Frozen Sausages", cat: "Meat & Poultry" },
-            { name: "Crispy Chicken Dippers", cat: "Meat & Poultry" },
-            { name: "Chicken Kievs", cat: "Meat & Poultry" },
-            { name: "Minced Beef (500g)", cat: "Meat & Poultry" },
-            { name: "Minced Turkey", cat: "Meat & Poultry" },
-            { name: "Pork Chops", cat: "Meat & Poultry" },
-            { name: "Unsmoked Bacon Rashers", cat: "Meat & Poultry" },
-            { name: "Lamb Chops", cat: "Meat & Poultry" },
-            { name: "Southern Fried Chicken Strips", cat: "Meat & Poultry" },
-            { name: "Hot & Spicy Chicken Wings", cat: "Meat & Poultry" },
-            { name: "Meatballs", cat: "Meat & Poultry" },
-            { name: "Black Pudding", cat: "Meat & Poultry" },
-
-            // Fish & Seafood
-            { name: "Birds Eye Fish Fingers", cat: "Fish & Seafood" },
-            { name: "Battered Cod Fillets", cat: "Fish & Seafood" },
-            { name: "Breaded Haddock Fillets", cat: "Fish & Seafood" },
-            { name: "Young's Admiral's Pie", cat: "Fish & Seafood" },
-            { name: "King Prawns (Raw)", cat: "Fish & Seafood" },
-            { name: "Cooked Coldwater Prawns", cat: "Fish & Seafood" },
-            { name: "Salmon Fillets", cat: "Fish & Seafood" },
-            { name: "Fish Cakes", cat: "Fish & Seafood" },
-            { name: "Breaded Scampi", cat: "Fish & Seafood" },
-            { name: "Squid Rings / Calamari", cat: "Fish & Seafood" },
-
-            // Vegetables & Side Dishes
-            { name: "Garden Peas", cat: "Vegetables & Side Dishes" },
-            { name: "Petit Pois", cat: "Vegetables & Side Dishes" },
-            { name: "Sweetcorn", cat: "Vegetables & Side Dishes" },
-            { name: "Mixed Vegetables", cat: "Vegetables & Side Dishes" },
-            { name: "Sliced Carrots", cat: "Vegetables & Side Dishes" },
-            { name: "Broccoli Florets", cat: "Vegetables & Side Dishes" },
-            { name: "Sliced Chopped Onions", cat: "Vegetables & Side Dishes" },
-            { name: "Aunt Bessie's Yorkshire Puddings", cat: "Vegetables & Side Dishes" },
-            { name: "Spinach Portions", cat: "Vegetables & Side Dishes" },
-            { name: "Stir Fry Veg Mix", cat: "Vegetables & Side Dishes" },
-            { name: "Sliced Peppers Mix", cat: "Vegetables & Side Dishes" },
-
-            // Ready Meals & Curries
-            { name: "Chicken Tikka Masala", cat: "Ready Meals & Curries" },
-            { name: "Beef Lasagne", cat: "Ready Meals & Curries" },
-            { name: "Chicken Korma", cat: "Ready Meals & Curries" },
-            { name: "Shepherd's Pie", cat: "Ready Meals & Curries" },
-            { name: "Cottage Pie", cat: "Ready Meals & Curries" },
-            { name: "Sweet & Sour Chicken", cat: "Ready Meals & Curries" },
-            { name: "Macaroni Cheese", cat: "Ready Meals & Curries" },
-            { name: "Spaghetti Bolognese", cat: "Ready Meals & Curries" },
-            { name: "Chilli Con Carne", cat: "Ready Meals & Curries" },
-
-            // Pies, Pasties & Bakery
-            { name: "Pukka Steak Pie", cat: "Pies, Pasties & Bakery" },
-            { name: "Pukka Chicken & Mushroom Pie", cat: "Pies, Pasties & Bakery" },
-            { name: "Greggs Sausage Rolls", cat: "Pies, Pasties & Bakery" },
-            { name: "Cornish Pasties", cat: "Pies, Pasties & Bakery" },
-            { name: "Minced Beef & Onion Pie", cat: "Pies, Pasties & Bakery" },
-            { name: "Cheese & Onion Pasties", cat: "Pies, Pasties & Bakery" },
-            { name: "Puff Pastry Sheets", cat: "Pies, Pasties & Bakery" },
-
-            // Pizza & Garlic Bread
-            { name: "Chicago Town Deep Dish Pepperoni", cat: "Pizza & Garlic Bread" },
-            { name: "Goodfella's Margherita Pizza", cat: "Pizza & Garlic Bread" },
-            { name: "Garlic Baguette", cat: "Pizza & Garlic Bread" },
-            { name: "Garlic Slices", cat: "Pizza & Garlic Bread" },
-            { name: "Meat Feast Pizza", cat: "Pizza & Garlic Bread" },
-
-            // Desserts & Ice Cream
-            { name: "Viennetta Vanilla", cat: "Desserts & Ice Cream" },
-            { name: "Magnum Classic Ice Creams", cat: "Desserts & Ice Cream" },
-            { name: "Bernard Matthews Jam Roly Poly", cat: "Desserts & Ice Cream" },
-            { name: "Apple Crumble", cat: "Desserts & Ice Cream" },
-            { name: "Chocolate Gateau", cat: "Desserts & Ice Cream" },
-            { name: "Profiteroles", cat: "Desserts & Ice Cream" },
-            { name: "Vanilla Ice Cream Tub", cat: "Desserts & Ice Cream" },
-            { name: "Frozen Raspberries & Blueberries", cat: "Desserts & Ice Cream" },
-
-            // Breakfast & Bakery
-            { name: "Frozen Croissants", cat: "Breakfast & Bakery" },
-            { name: "Pain au Chocolat", cat: "Breakfast & Bakery" },
-            { name: "Frozen Crumpets", cat: "Breakfast & Bakery" },
-            { name: "Sliced White Bread", cat: "Breakfast & Bakery" },
-
-            // Party Food & Snacks
-            { name: "Cocktail Sausage Rolls", cat: "Party Food & Snacks" },
-            { name: "Mozzarella Sticks", cat: "Party Food & Snacks" },
-            { name: "Duck Spring Rolls", cat: "Party Food & Snacks" },
-            { name: "Mini Indian Selection (Samosas & Bhajis)", cat: "Party Food & Snacks" },
-            { name: "Onion Rings", cat: "Party Food & Snacks" }
-        ];
-
         const STORAGE_KEY = 'frostkeeper_uk_items_v2';
         const SHOPPING_KEY = 'frostkeeper_uk_shopping_v2';
         
@@ -630,18 +516,63 @@
         let shoppingList = JSON.parse(localStorage.getItem(SHOPPING_KEY)) || [];
         let currentTab = 'all-items-page';
 
+        const PRESET_UK_FOODS = [
+            { name: "Straight Cut Chips", category: "Potato Products & Chips" },
+            { name: "Crinkle Cut Chips", category: "Potato Products & Chips" },
+            { name: "Curly Fries", category: "Potato Products & Chips" },
+            { name: "Potato Wedges", category: "Potato Products & Chips" },
+            { name: "Potato Waffles", category: "Potato Products & Chips" },
+            { name: "Hash Browns", category: "Potato Products & Chips" },
+            { name: "Mashed Potato Pellets", category: "Potato Products & Chips" },
+            { name: "Roast Potatoes", category: "Potato Products & Chips" },
+            { name: "Chicken Breasts", category: "Meat & Poultry" },
+            { name: "Chicken Thighs", category: "Meat & Poultry" },
+            { name: "Chicken Nuggets", category: "Meat & Poultry" },
+            { name: "Chicken Goujons", category: "Meat & Poultry" },
+            { name: "Chicken Kievs", category: "Meat & Poultry" },
+            { name: "Cumberland Sausages", category: "Meat & Poultry" },
+            { name: "Richmond Sausages", category: "Meat & Poultry" },
+            { name: "Beef Minced Meat (500g)", category: "Meat & Poultry" },
+            { name: "Pork Chop", category: "Meat & Poultry" },
+            { name: "Bacon Streaks", category: "Meat & Poultry" },
+            { name: "Beef Burgers", category: "Meat & Poultry" },
+            { name: "Cod Fish Fingers", category: "Fish & Seafood" },
+            { name: "Haddock Fillets", category: "Fish & Seafood" },
+            { name: "Battered Cod Fillets", category: "Fish & Seafood" },
+            { name: "Breaded Scampi", category: "Fish & Seafood" },
+            { name: "Salmon Fillets", category: "Fish & Seafood" },
+            { name: "Fish Cakes", category: "Fish & Seafood" },
+            { name: "Garden Peas", category: "Vegetables & Side Dishes" },
+            { name: "Petit Pois", category: "Vegetables & Side Dishes" },
+            { name: "Sweetcorn", category: "Vegetables & Side Dishes" },
+            { name: "Mixed Vegetables", category: "Vegetables & Side Dishes" },
+            { name: "Chopped Spinach", category: "Vegetables & Side Dishes" },
+            { name: "Sliced Onions", category: "Vegetables & Side Dishes" },
+            { name: "Broccoli Florets", category: "Vegetables & Side Dishes" },
+            { name: "Yorkshire Puddings", category: "Vegetables & Side Dishes" },
+            { name: "Chicken Tikka Masala", category: "Ready Meals & Curries" },
+            { name: "Beef Lasagne", category: "Ready Meals & Curries" },
+            { name: "Cottage Pie", category: "Ready Meals & Curries" },
+            { name: "Steak & Kidney Pie", category: "Pies, Pasties & Bakery" },
+            { name: "Minced Beef & Onion Pie", category: "Pies, Pasties & Bakery" },
+            { name: "Greggs Sausage Rolls", category: "Pies, Pasties & Bakery" },
+            { name: "Cheese & Onion Pasties", category: "Pies, Pasties & Bakery" },
+            { name: "Pepperoni Pizza", category: "Pizza & Garlic Bread" },
+            { name: "Margherita Pizza", category: "Pizza & Garlic Bread" },
+            { name: "Garlic Baguette", category: "Pizza & Garlic Bread" },
+            { name: "Vanilla Ice Cream (1L)", category: "Desserts & Ice Cream" },
+            { name: "Apple Strudel", category: "Desserts & Ice Cream" }
+        ];
+
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('dateAdded').value = today;
             updateStats();
             renderCurrentPage();
 
-            // Hide autocomplete on click outside
             document.addEventListener('click', (e) => {
-                const menu = document.getElementById('autocompleteMenu');
-                const input = document.getElementById('foodNameInput');
-                if (menu && !menu.contains(e.target) && e.target !== input) {
-                    menu.classList.add('hidden');
+                if (!e.target.closest('#foodNameInput') && !e.target.closest('#autocompleteList')) {
+                    document.getElementById('autocompleteList').classList.add('hidden');
                 }
             });
         });
@@ -672,39 +603,37 @@
             renderCurrentPage();
         }
 
-        // Handle Autocomplete Suggestions
-        function handleFoodInput(e) {
-            const val = e.target.value.toLowerCase().trim();
-            const menu = document.getElementById('autocompleteMenu');
-            if (!menu) return;
+        function handleAutocomplete() {
+            const val = document.getElementById('foodNameInput').value.toLowerCase().trim();
+            const listContainer = document.getElementById('autocompleteList');
 
-            if (val.length < 1) {
-                menu.classList.add('hidden');
+            if (!val) {
+                listContainer.classList.add('hidden');
                 return;
             }
 
-            const matches = UK_FREEZER_ITEMS.filter(item => item.name.toLowerCase().includes(val));
+            const matches = PRESET_UK_FOODS.filter(item => item.name.toLowerCase().includes(val));
 
             if (matches.length === 0) {
-                menu.classList.add('hidden');
+                listContainer.classList.add('hidden');
                 return;
             }
 
-            menu.innerHTML = matches.map(item => `
-                <div onclick="selectAutocomplete('${item.name.replace(/'/g, "\\'")}', '${item.cat}')" 
-                     class="px-4 py-3 hover:bg-sky-50 cursor-pointer flex items-center justify-between transition">
-                    <span class="font-bold text-slate-800 text-sm sm:text-base">${item.name}</span>
-                    <span class="text-xs font-black text-sky-600 bg-sky-100 px-2.5 py-1 rounded-xl">${item.cat}</span>
+            listContainer.innerHTML = matches.map(item => `
+                <div onclick="selectPreset('${item.name.replace(/'/g, "\\'")}', '${item.category}')" 
+                     class="p-3 hover:bg-sky-50 cursor-pointer flex items-center justify-between transition">
+                    <span class="font-extrabold text-slate-900">${item.name}</span>
+                    <span class="text-xs font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-lg">${item.category}</span>
                 </div>
             `).join('');
 
-            menu.classList.remove('hidden');
+            listContainer.classList.remove('hidden');
         }
 
-        function selectAutocomplete(name, cat) {
+        function selectPreset(name, category) {
             document.getElementById('foodNameInput').value = name;
-            document.getElementById('foodCategory').value = cat;
-            document.getElementById('autocompleteMenu').classList.add('hidden');
+            document.getElementById('foodCategory').value = category;
+            document.getElementById('autocompleteList').classList.add('hidden');
         }
 
         function handleFormSubmit(e) {
@@ -793,7 +722,6 @@
             document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-plus-circle text-sky-600"></i> Add Freezer Grub`;
             document.getElementById('cancelEditBtn').classList.add('hidden');
             document.getElementById('dateAdded').value = new Date().toISOString().split('T')[0];
-            document.getElementById('autocompleteMenu').classList.add('hidden');
             toggleHomemadeFields();
         }
 
@@ -810,7 +738,7 @@
 
         function clearFoodInput() {
             document.getElementById('foodNameInput').value = '';
-            document.getElementById('autocompleteMenu').classList.add('hidden');
+            document.getElementById('autocompleteList').classList.add('hidden');
         }
 
         function handleStatusChange() {
@@ -993,203 +921,90 @@
             }).join('');
         }
 
-        // Smart Dinners Generator combining Freezer Items & Store-Cupboard Staples
         function generateMealSuggestions() {
             const container = document.getElementById('mealSuggestionsContainer');
-            if (!container) return;
-
             if (inventory.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full py-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-300 p-8">
-                        <i class="fa-solid fa-utensils text-4xl text-rose-300 mb-3"></i>
-                        <p class="text-xl font-extrabold font-display text-slate-700">Your Freezer is Empty!</p>
-                        <p class="text-sm font-bold text-slate-500 mt-1">Add some sausages, fish, chips, or veggies to generate classic British dinner ideas.</p>
-                    </div>`;
+                container.innerHTML = `<div class="col-span-full p-8 text-center bg-white rounded-3xl font-bold text-slate-500">Add items to freezer to generate dinner ideas!</div>`;
                 return;
             }
 
-            const hasItem = (keywords) => {
-                return inventory.filter(item => {
-                    const name = item.name.toLowerCase();
-                    return keywords.some(kw => name.includes(kw.toLowerCase()));
-                });
-            };
-
-            const suggestions = [];
-
-            // 1. Full English Fry-Up / All-Day Breakfast
-            const breakfastMeats = hasItem(['sausage', 'bacon', 'black pudding', 'turkey dinosaur']);
-            const breakfastCarbs = hasItem(['hash brown', 'waffle']);
-            if (breakfastMeats.length > 0 || breakfastCarbs.length > 0) {
-                const freezerUsed = [...breakfastMeats, ...breakfastCarbs].map(i => i.name);
-                suggestions.push({
-                    title: "Full English Fry-Up / All-Day Breakfast 🍳",
-                    desc: "A hearty British classic! Fry or oven-bake your frozen sausages and hash browns, then pair with fresh cooked eggs and warm cupboard beans.",
+            const MEAL_RECIPES = [
+                {
+                    title: "Full English Fry-Up",
                     icon: "fa-egg text-amber-500",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Eggs (Fried/Poached/Scrambled)", "Tinned Baked Beans or Tomatoes", "Fresh Mushrooms", "Toast & Butter"]
-                });
-            }
-
-            // 2. Fish & Chips Supper
-            const fishItems = hasItem(['fish', 'cod', 'haddock', 'scampi']);
-            const chipItems = hasItem(['chip', 'fries', 'potato']);
-            const peaItems = hasItem(['pea', 'petit pois']);
-            if (fishItems.length > 0 || chipItems.length > 0) {
-                const freezerUsed = [...fishItems, ...chipItems, ...peaItems].map(i => i.name);
-                suggestions.push({
-                    title: "Friday Fish & Chips Supper 🐟🍟",
-                    desc: "Crispy oven-baked fish fillets with chunky chips and green peas. Bring out the vinegar, salt, and bread for chip sarnies!",
+                    freezerKeys: ["sausage", "bacon", "hash brown", "black pudding"],
+                    cupboardNeeds: ["Eggs", "Baked Beans", "Tinned Tomatoes", "Mushrooms", "Bread / Toast"]
+                },
+                {
+                    title: "Classic Fish & Chips Night",
                     icon: "fa-fish text-sky-500",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Tartare Sauce or Ketchup", "Malt Vinegar", "Sliced Bread & Butter (for Chip Butties)"]
-                });
-            }
-
-            // 3. Bangers & Mash with Onion Gravy
-            const sausages = hasItem(['sausage']);
-            if (sausages.length > 0) {
-                const vegSide = hasItem(['pea', 'onion', 'veg']);
-                const freezerUsed = [...sausages, ...vegSide].map(i => i.name);
-                suggestions.push({
-                    title: "Bangers & Mash with Rich Gravy 🌭🥔",
-                    desc: "Sizzling pork or veggie sausages served over smooth mashed potatoes, smothered in hot gravy with sweet peas.",
-                    icon: "fa-bowl-food text-amber-600",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Potatoes or Instant Mash", "Gravy Granules (Bisto)", "Fresh Onions", "Butter & Milk"]
-                });
-            }
-
-            // 4. Curry Night
-            const curryMeats = hasItem(['chicken', 'turkey', 'lamb', 'prawn']);
-            if (curryMeats.length > 0) {
-                const vegSide = hasItem(['pea', 'spinach', 'veg']);
-                const freezerUsed = [...curryMeats, ...vegSide].map(i => i.name);
-                suggestions.push({
-                    title: "Midweek Curry Night 🍛",
-                    desc: "Simmer your frozen chicken or prawns in curry sauce or paste, tossed with spinach or peas and served with basmati rice.",
-                    icon: "fa-pepper-hot text-rose-500",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Curry Sauce Jar / Paste", "Basmati Rice", "Naan Bread / Poppadoms", "Mango Chutney"]
-                });
-            }
-
-            // 5. Pasta Bake / Spaghetti Bolognese
-            const minceOrMeatballs = hasItem(['mince', 'minced', 'meatball', 'beef']);
-            if (minceOrMeatballs.length > 0) {
-                const vegSide = hasItem(['onion', 'pepper', 'veg']);
-                const freezerUsed = [...minceOrMeatballs, ...vegSide].map(i => i.name);
-                suggestions.push({
-                    title: "Pasta Bake or Spaghetti Bolognese 🍝",
-                    desc: "Brown your frozen minced beef or meatballs into a rich tomato garlic sauce, cooked over pasta and topped with melted cheddar.",
-                    icon: "fa-utensils text-red-500",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Dried Pasta or Spaghetti", "Tinned Chopped Tomatoes or Passata", "Garlic & Herbs", "Cheddar Cheese"]
-                });
-            }
-
-            // 6. Pie & Mash Feast
-            const pies = hasItem(['pie', 'pasty']);
-            if (pies.length > 0) {
-                const vegSide = hasItem(['pea', 'carrot', 'veg']);
-                const freezerUsed = [...pies, ...vegSide].map(i => i.name);
-                suggestions.push({
-                    title: "Comforting Pie & Mash 🥧",
-                    desc: "Golden baked pastry pie served alongside fluffy mash, steamy garden peas, and plenty of onion gravy.",
+                    freezerKeys: ["cod", "haddock", "fish", "scampi", "chips", "fries", "peas"],
+                    cupboardNeeds: ["Tartare Sauce", "Vinegar", "Bread & Butter", "Lemon Juice"]
+                },
+                {
+                    title: "Curry Night Special",
+                    icon: "fa-bowl-rice text-orange-500",
+                    freezerKeys: ["curry", "chicken", "tikka", "mince"],
+                    cupboardNeeds: ["Basmati Rice", "Naan Bread", "Mango Chutney", "Poppadoms"]
+                },
+                {
+                    title: "Pasta Bake or Spaghetti Bolognese",
+                    icon: "fa-plate-wheat text-rose-500",
+                    freezerKeys: ["mince", "beef", "meatballs", "spinach"],
+                    cupboardNeeds: ["Pasta / Spaghetti", "Passata / Chopped Tomatoes", "Grated Cheddar", "Garlic Bread"]
+                },
+                {
+                    title: "Comfort Pie & Mash",
                     icon: "fa-pie-chart text-amber-700",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Potatoes / Instant Mash", "Gravy Granules", "Butter"]
-                });
-            }
+                    freezerKeys: ["pie", "pasty", "sausage", "mash", "peas"],
+                    cupboardNeeds: ["Gravy Granules", "Fresh Potatoes (for mash)", "Baked Beans"]
+                }
+            ];
 
-            // 7. Pizza & Garlic Bread Night
-            const pizzas = hasItem(['pizza', 'garlic bread']);
-            if (pizzas.length > 0) {
-                const freezerUsed = pizzas.map(i => i.name);
-                suggestions.push({
-                    title: "Pizza & Garlic Bread Feast 🍕",
-                    desc: "Oven-bake your favorite frozen pizza and garlic slices for a quick weekend treat. Serve with fresh side salad and dips.",
-                    icon: "fa-pizza-slice text-amber-500",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Fresh Side Salad / Coleslaw", "Garlic Herb Dip / Ketchup", "Soft Drinks"]
-                });
-            }
+            let html = '';
 
-            // 8. Homemade Soup & Warm Crusty Roll
-            const soupsOrVeg = hasItem(['soup', 'veg', 'broth', 'spinach', 'carrot']);
-            const bakery = hasItem(['bread', 'roll', 'baguette']);
-            if (soupsOrVeg.length > 0 || bakery.length > 0) {
-                const freezerUsed = [...soupsOrVeg, ...bakery].map(i => i.name);
-                suggestions.push({
-                    title: "Warming Soup & Warm Roll 🍲",
-                    desc: "Reheat batch-cooked homemade soup or simmer frozen mixed vegetables with a stock cube. Serve with hot buttered crusty rolls.",
-                    icon: "fa-bowl-rice text-emerald-600",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Vegetable / Chicken Stock Cubes", "Butter / Spread", "Black Pepper & Herbs"]
-                });
-            }
+            MEAL_RECIPES.forEach(recipe => {
+                const matchedFreezer = inventory.filter(item => 
+                    recipe.freezerKeys.some(key => item.name.toLowerCase().includes(key))
+                );
 
-            // 9. Taco / Fajita / Wrap Night
-            const chickenStrips = hasItem(['chicken', 'strips', 'dippers', 'mince']);
-            if (chickenStrips.length > 0) {
-                const freezerUsed = chickenStrips.map(i => i.name);
-                suggestions.push({
-                    title: "Crispy Fajita / Taco Wrap Night 🌮",
-                    desc: "Cook crispy chicken strips or seasoned mince, slice into soft warm tortilla wraps, and top with cheese, salsa and salad.",
-                    icon: "fa-layer-group text-amber-600",
-                    freezerItems: [...new Set(freezerUsed)],
-                    cupboardItems: ["Tortilla Wraps", "Grated Cheddar Cheese", "Salsa / Sour Cream", "Shredded Lettuce"]
-                });
-            }
+                if (matchedFreezer.length > 0) {
+                    html += `
+                        <div class="bg-white p-6 rounded-3xl border-2 border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-2xl">
+                                        <i class="fa-solid ${recipe.icon}"></i>
+                                    </div>
+                                    <h3 class="text-xl font-black font-display text-slate-900">${recipe.title}</h3>
+                                </div>
 
-            // Fallback general suggestion if custom items don't match strict rules
-            if (suggestions.length === 0) {
-                const firstFew = inventory.slice(0, 3).map(i => i.name);
-                suggestions.push({
-                    title: "Custom Freezer & Pantry Mix 🍽️",
-                    desc: `Combine your frozen ${firstFew.join(', ')} with everyday pantry staples like rice, pasta, eggs, or gravy for a meal!`,
-                    icon: "fa-kitchen-set text-sky-600",
-                    freezerItems: firstFew,
-                    cupboardItems: ["Eggs", "Rice / Pasta", "Gravy / Sauces", "Bread / Butter"]
-                });
-            }
+                                <div class="space-y-3 mt-4">
+                                    <div>
+                                        <p class="text-xs font-black uppercase text-sky-800 tracking-wider mb-1.5"><i class="fa-solid fa-snowflake text-sky-500 mr-1"></i> From Your Freezer:</p>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            ${matchedFreezer.map(f => `<span class="px-2.5 py-1 bg-sky-100 text-sky-900 border border-sky-200 rounded-xl text-xs font-extrabold">${f.name} (${f.freezer})</span>`).join('')}
+                                        </div>
+                                    </div>
 
-            container.innerHTML = suggestions.map(s => `
-                <div class="bg-white rounded-3xl p-6 border-2 border-slate-300 shadow-sm flex flex-col justify-between space-y-4">
-                    <div class="space-y-3">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-2xl flex-shrink-0">
-                                <i class="fa-solid ${s.icon}"></i>
-                            </div>
-                            <h3 class="text-xl font-black font-display text-slate-900 leading-tight">${s.title}</h3>
-                        </div>
-
-                        <p class="text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">${s.desc}</p>
-
-                        <!-- From Freezer Badge -->
-                        <div class="p-3 bg-sky-50 rounded-2xl border border-sky-200 space-y-1.5">
-                            <span class="text-[11px] font-black uppercase tracking-wider text-sky-800 flex items-center gap-1.5">
-                                <i class="fa-solid fa-snowflake text-sky-600"></i> From Your Freezer:
-                            </span>
-                            <div class="flex flex-wrap gap-1.5">
-                                ${s.freezerItems.map(item => `
-                                    <span class="px-2.5 py-1 bg-white text-sky-900 border border-sky-300 rounded-xl text-xs font-black shadow-sm">${item}</span>
-                                `).join('')}
+                                    <div>
+                                        <p class="text-xs font-black uppercase text-amber-800 tracking-wider mb-1.5"><i class="fa-solid fa-basket-shopping text-amber-500 mr-1"></i> You'll Need from Cupboard / Fridge:</p>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            ${recipe.cupboardNeeds.map(c => `<span class="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl text-xs font-extrabold">${c}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    `;
+                }
+            });
 
-                        <!-- From Cupboard / Fridge Badge -->
-                        <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-1.5">
-                            <span class="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-                                <i class="fa-solid fa-box-open text-amber-600"></i> You'll Need from Cupboard / Fridge:
-                            </span>
-                            <ul class="list-disc list-inside text-xs font-bold text-slate-700 space-y-1">
-                                ${s.cupboardItems.map(c => `<li>${c}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            if (!html) {
+                html = `<div class="col-span-full p-8 text-center bg-white rounded-3xl font-bold text-slate-500">Add more items like sausages, bacon, chips, or mince to generate dinner recipes!</div>`;
+            }
+
+            container.innerHTML = html;
         }
 
         function renderShoppingList() {
@@ -1272,6 +1087,15 @@
                 }
             };
             reader.readAsText(file);
+        }
+    </script>
+
+    <!-- Register Service Worker for PWA Builder -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('pwabuilder-sw.js')
+                .then(() => console.log("Service Worker registered."))
+                .catch((err) => console.log("Service Worker registration failed:", err));
         }
     </script>
 </body>
