@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100 text-slate-800">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FrostKeeper UK - Freezer Inventory Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        display: ['Fredoka', 'sans-serif'],
+                    },
+                    colors: {
+                        frost: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #0284c7; border-radius: 9999px; }
+        .fun-card {
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease-in-out;
+        }
+        .fun-card:hover {
+            transform: translateY(-2px);
+            border-color: #0284c7;
+            box-shadow: 0 10px 20px -4px rgba(2, 132, 199, 0.15);
+        }
+        .fun-btn { transition: all 0.15s ease-in-out; }
+        .fun-btn:hover { transform: translateY(-2px) scale(1.02); }
+        .fun-btn:active { transform: translateY(1px) scale(0.98); }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        @media print {
+            header, nav, .no-print { display: none !important; }
+            body { background: white !important; }
+            .page-view { display: block !important; }
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col font-sans antialiased bg-slate-100 text-slate-900 text-base">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 bg-white border-b-2 border-sky-200 px-4 py-4 sm:px-8 shadow-sm">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-400 to-blue-600 flex items-center justify-center shadow-md text-white animate-float">
+                    <i class="fa-solid fa-snowflake text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold font-display tracking-wide text-sky-900 drop-shadow-sm">FrostKeeper 🧊</h1>
+                    <p class="text-sm sm:text-base font-bold text-sky-700 tracking-wide">Your UK Freezer Inventory</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Actions -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="switchTab('add-item-page')" class="fun-btn px-4 sm:px-5 py-2.5 text-sm sm:text-base font-extrabold rounded-2xl bg-sky-500 hover:bg-sky-600 text-white shadow-md flex items-center space-x-2 font-display uppercase tracking-wider">
+                    <i class="fa-solid fa-plus-circle text-lg"></i>
+                    <span class="hidden sm:inline">Add Grub</span>
+                </button>
+                <button onclick="window.print()" class="fun-btn px-3.5 py-2.5 text-sm font-bold rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300 flex items-center space-x-2" title="Print Inventory">
+                    <i class="fa-solid fa-print text-base"></i>
+                    <span class="hidden md:inline">Print</span>
+                </button>
+                <button onclick="exportData()" class="fun-btn px-3.5 py-2.5 text-sm font-bold rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300 flex items-center space-x-2" title="Export Backup">
+                    <i class="fa-solid fa-download text-base"></i>
+                    <span class="hidden md:inline">Export</span>
+                </button>
+                <label class="fun-btn px-3.5 py-2.5 text-sm font-bold rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300 cursor-pointer flex items-center space-x-2" title="Import Backup">
+                    <i class="fa-solid fa-upload text-base"></i>
+                    <span class="hidden md:inline">Import</span>
+                    <input type="file" id="importFileInput" onchange="importData(event)" accept=".json" class="hidden">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar / Page Tabs -->
+    <nav class="sticky top-[89px] z-20 bg-sky-50 border-b-2 border-sky-200 px-4 sm:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center space-x-3 overflow-x-auto no-scrollbar py-1">
+            <button onclick="switchTab('all-items-page')" id="tab-all-items-page" class="nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap bg-sky-500 text-white shadow border-2 border-sky-600 font-display tracking-wide">
+                <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                <span>All Food Items</span>
+                <span id="badgeAllCount" class="ml-1 px-2.5 py-0.5 bg-white text-sky-700 font-extrabold rounded-full text-xs">0</span>
+            </button>
+
+            <button onclick="switchTab('tall-freezer-page')" id="tab-tall-freezer-page" class="nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap text-slate-700 bg-white hover:bg-slate-200 border-2 border-slate-300 font-display tracking-wide">
+                <i class="fa-solid fa-door-closed text-sky-600 text-lg"></i>
+                <span>Tall Freezer</span>
+                <span id="badgeTallCount" class="ml-1 px-2.5 py-0.5 bg-slate-200 text-slate-800 font-extrabold rounded-full text-xs">0</span>
+            </button>
+
+            <button onclick="switchTab('chest-freezer-page')" id="tab-chest-freezer-page" class="nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap text-slate-700 bg-white hover:bg-slate-200 border-2 border-slate-300 font-display tracking-wide">
+                <i class="fa-solid fa-box text-purple-600 text-lg"></i>
+                <span>Chest Freezer</span>
+                <span id="badgeChestCount" class="ml-1 px-2.5 py-0.5 bg-slate-200 text-slate-800 font-extrabold rounded-full text-xs">0</span>
+            </button>
+
+            <button onclick="switchTab('category-page')" id="tab-category-page" class="nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap text-slate-700 bg-white hover:bg-slate-200 border-2 border-slate-300 font-display tracking-wide">
+                <i class="fa-solid fa-layer-group text-amber-600 text-lg"></i>
+                <span>By Category</span>
+            </button>
+
+            <button onclick="switchTab('meals-page')" id="tab-meals-page" class="nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap text-slate-700 bg-white hover:bg-slate-200 border-2 border-slate-300 font-display tracking-wide">
+                <i class="fa-solid fa-utensils text-rose-500 text-lg"></i>
+                <span>What's For Dinner?</span>
+            </button>
+
+            <button onclick="switchTab('shopping-page')" id="tab-shopping-page" class="nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap text-slate-700 bg-white hover:bg-slate-200 border-2 border-slate-300 font-display tracking-wide">
+                <i class="fa-solid fa-cart-shopping text-emerald-600 text-lg"></i>
+                <span>Shopping List</span>
+                <span id="badgeShopCount" class="ml-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-extrabold rounded-full text-xs">0</span>
+            </button>
+
+            <button onclick="switchTab('add-item-page')" id="tab-add-item-page" class="nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap text-slate-700 bg-white hover:bg-slate-200 border-2 border-slate-300 font-display tracking-wide">
+                <i class="fa-solid fa-pen-to-square text-emerald-600 text-lg"></i>
+                <span>Add / Edit Item</span>
+            </button>
+
+            <button onclick="switchTab('github-setup-page')" id="tab-github-setup-page" class="nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap text-slate-700 bg-white hover:bg-slate-200 border-2 border-slate-300 font-display tracking-wide">
+                <i class="fa-brands fa-github text-lg"></i>
+                <span>GitHub Setup</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Views Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- Global Search & Stats Dashboard -->
+        <section class="bg-white rounded-3xl p-6 border-2 border-slate-300 shadow-sm space-y-5 no-print">
+            <div class="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                <div class="relative w-full lg:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-slate-400 text-base"></i>
+                    <input type="text" id="globalSearch" oninput="renderCurrentPage()" placeholder="Search food, drawer, category..."
+                        class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 focus:bg-white rounded-2xl pl-12 pr-4 py-3 text-sm sm:text-base text-slate-900 placeholder-slate-500 font-bold outline-none shadow-inner transition">
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <select id="filterCategory" onchange="renderCurrentPage()" class="bg-slate-50 border-2 border-slate-300 focus:border-sky-500 rounded-2xl px-4 py-3 text-sm sm:text-base font-bold text-slate-800 outline-none cursor-pointer">
+                        <option value="ALL">All Categories</option>
+                        <option value="Potato Products & Chips">🥔 Potato Products & Chips</option>
+                        <option value="Meat & Poultry">🍗 Meat & Poultry</option>
+                        <option value="Fish & Seafood">🐟 Fish & Seafood</option>
+                        <option value="Vegetables & Side Dishes">🥦 Vegetables & Side Dishes</option>
+                        <option value="Ready Meals & Curries">🍛 Ready Meals & Curries</option>
+                        <option value="Pies, Pasties & Bakery">🥧 Pies, Pasties & Bakery</option>
+                        <option value="Pizza & Garlic Bread">🍕 Pizza & Garlic Bread</option>
+                        <option value="Desserts & Ice Cream">🍰 Desserts & Ice Cream</option>
+                        <option value="Breakfast & Bakery">🥐 Breakfast & Bakery</option>
+                        <option value="Party Food & Snacks">🍢 Party Food & Snacks</option>
+                        <option value="Homemade Meals & Soups">🍲 Homemade Meals & Soups</option>
+                        <option value="Other / Miscellaneous">📦 Other / Miscellaneous</option>
+                    </select>
+
+                    <select id="filterStatus" onchange="renderCurrentPage()" class="bg-slate-50 border-2 border-slate-300 focus:border-sky-500 rounded-2xl px-4 py-3 text-sm sm:text-base font-bold text-slate-800 outline-none cursor-pointer">
+                        <option value="ALL">All Packaging</option>
+                        <option value="Unopened Pack">📦 Unopened Only</option>
+                        <option value="Portions Left">🍽️ Portions Left</option>
+                        <option value="Homemade">🧑‍🍳 Homemade Batches</option>
+                    </select>
+
+                    <select id="sortBy" onchange="renderCurrentPage()" class="bg-slate-50 border-2 border-slate-300 focus:border-sky-500 rounded-2xl px-4 py-3 text-sm sm:text-base font-bold text-slate-800 outline-none cursor-pointer">
+                        <option value="dateDesc">✨ Newest Frozen First</option>
+                        <option value="dateAsc">⌛ Oldest Frozen First</option>
+                        <option value="nameAsc">🔤 Name (A-Z)</option>
+                        <option value="expiryAsc">⚠️ Expiring Soonest</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t-2 border-slate-200">
+                <div class="flex items-center space-x-3 bg-sky-50 p-4 rounded-2xl border-2 border-sky-200">
+                    <div class="p-3 rounded-xl bg-sky-500 text-white text-xl"><i class="fa-solid fa-boxes-stacked"></i></div>
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-wider text-sky-800">Total Food Count</p>
+                        <p id="statTotalItems" class="text-2xl font-black font-display text-sky-900">0</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 bg-blue-50 p-4 rounded-2xl border-2 border-blue-200">
+                    <div class="p-3 rounded-xl bg-blue-600 text-white text-xl"><i class="fa-solid fa-door-closed"></i></div>
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-wider text-blue-800">Tall Freezer</p>
+                        <p id="statTallCount" class="text-2xl font-black font-display text-blue-900">0</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
+                    <div class="p-3 rounded-xl bg-purple-600 text-white text-xl"><i class="fa-solid fa-box"></i></div>
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-wider text-purple-800">Chest Freezer</p>
+                        <p id="statChestCount" class="text-2xl font-black font-display text-purple-900">0</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 bg-amber-50 p-4 rounded-2xl border-2 border-amber-200">
+                    <div class="p-3 rounded-xl bg-amber-500 text-white text-xl"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-wider text-amber-800">Aging (&gt; 6 Mos)</p>
+                        <p id="statAgingCount" class="text-2xl font-black font-display text-amber-900">0</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 1: ALL ITEMS PAGE -->
+        <section id="all-items-page" class="page-view space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black font-display text-sky-900 flex items-center gap-2">
+                    <i class="fa-solid fa-boxes-stacked text-sky-600"></i> All Freezer Inventory
+                </h2>
+                <span class="text-sm font-bold text-slate-600">Combined food items across all freezers</span>
+            </div>
+            <div id="allItemsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Item cards rendered dynamically -->
+            </div>
+        </section>
+
+        <!-- PAGE 2: TALL FREEZER PAGE -->
+        <section id="tall-freezer-page" class="page-view space-y-4 hidden">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black font-display text-sky-900 flex items-center gap-2">
+                    <i class="fa-solid fa-door-closed text-sky-600"></i> Tall Freezer Contents
+                </h2>
+                <span class="text-sm font-bold text-slate-600">Stored in Tall Freezer</span>
+            </div>
+            <div id="tallFreezerContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </section>
+
+        <!-- PAGE 3: CHEST FREEZER PAGE -->
+        <section id="chest-freezer-page" class="page-view space-y-4 hidden">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black font-display text-purple-900 flex items-center gap-2">
+                    <i class="fa-solid fa-box text-purple-600"></i> Chest Freezer Contents
+                </h2>
+                <span class="text-sm font-bold text-slate-600">Stored in Chest Freezer</span>
+            </div>
+            <div id="chestFreezerContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </section>
+
+        <!-- PAGE 4: VIEW BY CATEGORY PAGE -->
+        <section id="category-page" class="page-view space-y-6 hidden">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black font-display text-amber-900 flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-amber-600"></i> Grouped by Category
+                </h2>
+                <span class="text-sm font-bold text-slate-600">Organised UK food categories</span>
+            </div>
+            <div id="categoryContainer" class="space-y-6"></div>
+        </section>
+
+        <!-- PAGE 5: WHAT'S FOR DINNER PAGE -->
+        <section id="meals-page" class="page-view space-y-6 hidden">
+            <div class="bg-gradient-to-r from-rose-500 via-amber-500 to-sky-600 text-white rounded-3xl p-6 sm:p-8 shadow-md">
+                <div class="max-w-2xl space-y-3">
+                    <h2 class="text-3xl font-black font-display flex items-center gap-3">
+                        <i class="fa-solid fa-utensils"></i> What's For Dinner?
+                    </h2>
+                    <p class="text-base font-semibold text-rose-50">
+                        Smart dinner generator matching what's inside your freezer with standard UK cupboard & fridge staples (Eggs, Beans, Mushrooms, Bread, Curry Sauce & Rice)!
+                    </p>
+                    <button onclick="generateMealSuggestions()" class="fun-btn px-6 py-3 bg-white text-rose-600 font-black font-display rounded-2xl shadow hover:bg-rose-50 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Fresh Meal Ideas
+                    </button>
+                </div>
+            </div>
+
+            <div id="mealSuggestionsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </section>
+
+        <!-- PAGE 6: SHOPPING LIST PAGE -->
+        <section id="shopping-page" class="page-view space-y-6 hidden">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-black font-display text-emerald-900 flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-emerald-600"></i> Smart Shopping & Restock List
+                    </h2>
+                    <p class="text-sm font-bold text-slate-600">Items low in stock or manually added to replenish</p>
+                </div>
+                <button onclick="copyShoppingList()" class="fun-btn px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-copy"></i> Copy List
+                </button>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 border-2 border-slate-300 shadow-sm space-y-4">
+                <div class="flex gap-3">
+                    <input type="text" id="customShopInput" placeholder="Add extra item to buy (e.g. Garlic Bread)..."
+                        class="flex-1 bg-slate-50 border-2 border-slate-300 focus:border-emerald-500 rounded-2xl px-4 py-3 text-base font-bold outline-none">
+                    <button onclick="addCustomShopItem()" class="fun-btn px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black font-display rounded-2xl">
+                        Add
+                    </button>
+                </div>
+
+                <div id="shoppingListContainer" class="divide-y divide-slate-100"></div>
+            </div>
+        </section>
+
+        <!-- PAGE 7: ADD / EDIT ITEM PAGE -->
+        <section id="add-item-page" class="page-view hidden">
+            <div class="max-w-2xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-sky-200 relative">
+                <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-slate-200">
+                    <h2 id="formTitle" class="text-2xl font-black font-display text-sky-900 flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-sky-600"></i> Add Freezer Grub
+                    </h2>
+                    <button id="cancelEditBtn" onclick="resetForm()" class="hidden text-sm font-bold text-slate-500 hover:text-slate-800 underline">
+                        Cancel Edit
+                    </button>
+                </div>
+
+                <form id="itemForm" onsubmit="handleFormSubmit(event)" class="space-y-5">
+                    <input type="hidden" id="itemId">
+
+                    <!-- Food Input with Interactive Dropdown Autocomplete -->
+                    <div class="relative">
+                        <label class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
+                            Food Item Name <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="foodNameInput" required autocomplete="off" oninput="handleFoodInput(event)" onfocus="handleFoodInput(event)"
+                                placeholder="Type e.g. Chips, Chicken Nuggets, Fish Fingers, Aunt Bessie's..." 
+                                class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 focus:bg-white rounded-2xl px-4 py-3.5 text-base sm:text-lg text-slate-900 placeholder-slate-400 font-bold outline-none transition">
+                            <button type="button" onclick="clearFoodInput()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-700">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                        <!-- Autocomplete Suggestions Menu -->
+                        <div id="autocompleteMenu" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border-2 border-sky-400 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-100">
+                            <!-- Items auto injected here -->
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
+                            Food Category <span class="text-red-500">*</span>
+                        </label>
+                        <select id="foodCategory" required class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 focus:bg-white rounded-2xl px-4 py-3.5 text-base font-bold text-slate-800 outline-none">
+                            <option value="Potato Products & Chips">🥔 Potato Products & Chips</option>
+                            <option value="Meat & Poultry">🍗 Meat & Poultry</option>
+                            <option value="Fish & Seafood">🐟 Fish & Seafood</option>
+                            <option value="Vegetables & Side Dishes">🥦 Vegetables & Side Dishes</option>
+                            <option value="Ready Meals & Curries">🍛 Ready Meals & Curries</option>
+                            <option value="Pies, Pasties & Bakery">🥧 Pies, Pasties & Bakery</option>
+                            <option value="Pizza & Garlic Bread">🍕 Pizza & Garlic Bread</option>
+                            <option value="Desserts & Ice Cream">🍰 Desserts & Ice Cream</option>
+                            <option value="Breakfast & Bakery">🥐 Breakfast & Bakery</option>
+                            <option value="Party Food & Snacks">🍢 Party Food & Snacks</option>
+                            <option value="Homemade Meals & Soups">🍲 Homemade Meals & Soups</option>
+                            <option value="Other / Miscellaneous">📦 Other / Miscellaneous</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-kitchen-set text-emerald-600 text-xl"></i>
+                            <span class="text-sm sm:text-base font-extrabold text-emerald-900">Is this Homemade / Batch Cooked?</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="isHomemade" onchange="toggleHomemadeFields()" class="sr-only peer">
+                            <div class="w-12 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                    </div>
+
+                    <div id="homemadeFields" class="hidden p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300">
+                        <label class="block text-sm font-bold text-emerald-900 mb-2">Batch / Cooked Date</label>
+                        <input type="date" id="cookedDate" class="w-full bg-white border-2 border-emerald-400 focus:border-emerald-600 rounded-xl px-4 py-2.5 text-base font-bold text-slate-800">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
+                            Freezer Location <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="flex items-center justify-center p-4 rounded-2xl border-2 border-slate-300 bg-slate-50 cursor-pointer hover:border-sky-500 has-[:checked]:border-sky-600 has-[:checked]:bg-sky-100 transition">
+                                <input type="radio" name="freezerType" value="Tall Freezer" checked class="sr-only">
+                                <i class="fa-solid fa-door-closed text-sky-600 mr-2 text-lg"></i>
+                                <span class="text-sm sm:text-base font-black text-slate-900 font-display">Tall Freezer</span>
+                            </label>
+                            <label class="flex items-center justify-center p-4 rounded-2xl border-2 border-slate-300 bg-slate-50 cursor-pointer hover:border-purple-500 has-[:checked]:border-purple-600 has-[:checked]:bg-purple-100 transition">
+                                <input type="radio" name="freezerType" value="Chest Freezer" class="sr-only">
+                                <i class="fa-solid fa-box text-purple-600 mr-2 text-lg"></i>
+                                <span class="text-sm sm:text-base font-black text-slate-900 font-display">Chest Freezer</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
+                            Drawer / Section / Basket (Optional)
+                        </label>
+                        <input type="text" id="drawerNote" placeholder="e.g. Top Drawer, Basket 2, Bottom Shelf"
+                            class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 focus:bg-white rounded-2xl px-4 py-3 text-base text-slate-900 placeholder-slate-400 font-bold outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
+                                Packaging Status
+                            </label>
+                            <select id="packageStatus" onchange="handleStatusChange()" class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 rounded-2xl px-3 py-3 text-sm sm:text-base font-bold text-slate-800 outline-none">
+                                <option value="Unopened Pack">📦 Unopened Pack</option>
+                                <option value="Portions Left">🍽️ Portions Left</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label id="quantityLabel" class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
+                                Quantity / Pack Count
+                            </label>
+                            <input type="number" id="itemQuantity" min="1" value="1" required
+                                class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 rounded-2xl px-4 py-3 text-base font-extrabold text-slate-900 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
+                                Date Frozen
+                            </label>
+                            <input type="date" id="dateAdded" required class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 rounded-2xl px-3 py-2.5 text-sm sm:text-base font-bold text-slate-800 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-black uppercase tracking-wider text-sky-900 mb-2 font-display">
+                                Best Before / Use By
+                            </label>
+                            <input type="date" id="expiryDate" class="w-full bg-slate-50 border-2 border-slate-300 focus:border-sky-500 rounded-2xl px-3 py-2.5 text-sm sm:text-base font-bold text-slate-800 outline-none">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="fun-btn w-full py-4 px-5 bg-sky-500 hover:bg-sky-600 text-white font-black font-display text-base sm:text-lg rounded-2xl shadow-md flex items-center justify-center space-x-2 mt-6 uppercase tracking-wider">
+                        <i class="fa-solid fa-circle-plus text-xl"></i>
+                        <span>Save To Freezer Inventory</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- PAGE 8: GITHUB SETUP GUIDE -->
+        <section id="github-setup-page" class="page-view hidden">
+            <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-8 border-2 border-slate-300 shadow-sm space-y-6">
+                <div class="flex items-center space-x-4 pb-4 border-b-2 border-slate-200">
+                    <i class="fa-brands fa-github text-4xl text-slate-800"></i>
+                    <div>
+                        <h2 class="text-2xl font-black font-display text-slate-900">Host on GitHub Pages (100% Free!)</h2>
+                        <p class="text-sm font-bold text-slate-600">Access your inventory on phone, tablet, or PC anytime!</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-sm sm:text-base text-slate-800 font-medium">
+                    <div class="flex items-start space-x-4">
+                        <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black font-display text-base flex-shrink-0 border border-sky-300">1</span>
+                        <div>
+                            <strong class="text-slate-900 font-extrabold">Create a GitHub Account & Repository</strong>
+                            <p class="text-slate-600 mt-1">Go to <a href="https://github.com" target="_blank" class="text-sky-600 font-extrabold underline">github.com</a>, sign up or log in, and click "New Repository". Name it <code class="bg-slate-100 border border-slate-300 px-2 py-0.5 rounded text-sky-800 font-mono font-bold">freezer-inventory</code>.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4">
+                        <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black font-display text-base flex-shrink-0 border border-sky-300">2</span>
+                        <div>
+                            <strong class="text-slate-900 font-extrabold">Upload File</strong>
+                            <p class="text-slate-600 mt-1">Click "uploading an existing file" and upload this file as <code class="bg-slate-100 border border-slate-300 px-2 py-0.5 rounded text-sky-800 font-mono font-bold">index.html</code>.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4">
+                        <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black font-display text-base flex-shrink-0 border border-sky-300">3</span>
+                        <div>
+                            <strong class="text-slate-900 font-extrabold">Enable Pages</strong>
+                            <p class="text-slate-600 mt-1">Go to **Settings** &rarr; **Pages**. Under **Build and deployment / Branch**, select <code class="bg-slate-100 border border-slate-300 px-2 py-0.5 rounded text-sky-800 font-mono font-bold">main</code> branch and click **Save**.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4">
+                        <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black font-display text-base flex-shrink-0 border border-sky-300">4</span>
+                        <div>
+                            <strong class="text-slate-900 font-extrabold">Access Anywhere</strong>
+                            <p class="text-slate-600 mt-1">In 1-2 minutes, GitHub gives you a link (e.g., <code class="bg-slate-100 border border-slate-300 px-2 py-0.5 rounded text-sky-800 font-mono font-bold">https://yourusername.github.io/freezer-inventory</code>). Bookmark it or save it to your phone screen!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- App Logic JavaScript -->
+    <script>
+        // Extensive UK Freezer Items Database (Iceland, Tesco, Farmfoods style)
+        const UK_FREEZER_ITEMS = [
+            // Potato Products & Chips
+            { name: "Oven Chips", cat: "Potato Products & Chips" },
+            { name: "McCain Straight Cut Chips", cat: "Potato Products & Chips" },
+            { name: "McCain Curly Fries", cat: "Potato Products & Chips" },
+            { name: "Aunt Bessie's Roast Potatoes", cat: "Potato Products & Chips" },
+            { name: "Potato Waffles", cat: "Potato Products & Chips" },
+            { name: "Hash Browns", cat: "Potato Products & Chips" },
+            { name: "Crinkle Cut Chips", cat: "Potato Products & Chips" },
+            { name: "Skinny Fries", cat: "Potato Products & Chips" },
+            { name: "Potato Croquettes", cat: "Potato Products & Chips" },
+            { name: "Mashed Potato Pellets", cat: "Potato Products & Chips" },
+            { name: "Sweet Potato Fries", cat: "Potato Products & Chips" },
+            { name: "Potato Smiles", cat: "Potato Products & Chips" },
+
+            // Meat & Poultry
+            { name: "Chicken Breasts", cat: "Meat & Poultry" },
+            { name: "Chicken Nuggets", cat: "Meat & Poultry" },
+            { name: "Bernard Matthews Turkey Dinosaurs", cat: "Meat & Poultry" },
+            { name: "Beef Burgers", cat: "Meat & Poultry" },
+            { name: "Pork Sausages", cat: "Meat & Poultry" },
+            { name: "Richmond Frozen Sausages", cat: "Meat & Poultry" },
+            { name: "Crispy Chicken Dippers", cat: "Meat & Poultry" },
+            { name: "Chicken Kievs", cat: "Meat & Poultry" },
+            { name: "Minced Beef (500g)", cat: "Meat & Poultry" },
+            { name: "Minced Turkey", cat: "Meat & Poultry" },
+            { name: "Pork Chops", cat: "Meat & Poultry" },
+            { name: "Unsmoked Bacon Rashers", cat: "Meat & Poultry" },
+            { name: "Lamb Chops", cat: "Meat & Poultry" },
+            { name: "Southern Fried Chicken Strips", cat: "Meat & Poultry" },
+            { name: "Hot & Spicy Chicken Wings", cat: "Meat & Poultry" },
+            { name: "Meatballs", cat: "Meat & Poultry" },
+            { name: "Black Pudding", cat: "Meat & Poultry" },
+
+            // Fish & Seafood
+            { name: "Birds Eye Fish Fingers", cat: "Fish & Seafood" },
+            { name: "Battered Cod Fillets", cat: "Fish & Seafood" },
+            { name: "Breaded Haddock Fillets", cat: "Fish & Seafood" },
+            { name: "Young's Admiral's Pie", cat: "Fish & Seafood" },
+            { name: "King Prawns (Raw)", cat: "Fish & Seafood" },
+            { name: "Cooked Coldwater Prawns", cat: "Fish & Seafood" },
+            { name: "Salmon Fillets", cat: "Fish & Seafood" },
+            { name: "Fish Cakes", cat: "Fish & Seafood" },
+            { name: "Breaded Scampi", cat: "Fish & Seafood" },
+            { name: "Squid Rings / Calamari", cat: "Fish & Seafood" },
+
+            // Vegetables & Side Dishes
+            { name: "Garden Peas", cat: "Vegetables & Side Dishes" },
+            { name: "Petit Pois", cat: "Vegetables & Side Dishes" },
+            { name: "Sweetcorn", cat: "Vegetables & Side Dishes" },
+            { name: "Mixed Vegetables", cat: "Vegetables & Side Dishes" },
+            { name: "Sliced Carrots", cat: "Vegetables & Side Dishes" },
+            { name: "Broccoli Florets", cat: "Vegetables & Side Dishes" },
+            { name: "Sliced Chopped Onions", cat: "Vegetables & Side Dishes" },
+            { name: "Aunt Bessie's Yorkshire Puddings", cat: "Vegetables & Side Dishes" },
+            { name: "Spinach Portions", cat: "Vegetables & Side Dishes" },
+            { name: "Stir Fry Veg Mix", cat: "Vegetables & Side Dishes" },
+            { name: "Sliced Peppers Mix", cat: "Vegetables & Side Dishes" },
+
+            // Ready Meals & Curries
+            { name: "Chicken Tikka Masala", cat: "Ready Meals & Curries" },
+            { name: "Beef Lasagne", cat: "Ready Meals & Curries" },
+            { name: "Chicken Korma", cat: "Ready Meals & Curries" },
+            { name: "Shepherd's Pie", cat: "Ready Meals & Curries" },
+            { name: "Cottage Pie", cat: "Ready Meals & Curries" },
+            { name: "Sweet & Sour Chicken", cat: "Ready Meals & Curries" },
+            { name: "Macaroni Cheese", cat: "Ready Meals & Curries" },
+            { name: "Spaghetti Bolognese", cat: "Ready Meals & Curries" },
+            { name: "Chilli Con Carne", cat: "Ready Meals & Curries" },
+
+            // Pies, Pasties & Bakery
+            { name: "Pukka Steak Pie", cat: "Pies, Pasties & Bakery" },
+            { name: "Pukka Chicken & Mushroom Pie", cat: "Pies, Pasties & Bakery" },
+            { name: "Greggs Sausage Rolls", cat: "Pies, Pasties & Bakery" },
+            { name: "Cornish Pasties", cat: "Pies, Pasties & Bakery" },
+            { name: "Minced Beef & Onion Pie", cat: "Pies, Pasties & Bakery" },
+            { name: "Cheese & Onion Pasties", cat: "Pies, Pasties & Bakery" },
+            { name: "Puff Pastry Sheets", cat: "Pies, Pasties & Bakery" },
+
+            // Pizza & Garlic Bread
+            { name: "Chicago Town Deep Dish Pepperoni", cat: "Pizza & Garlic Bread" },
+            { name: "Goodfella's Margherita Pizza", cat: "Pizza & Garlic Bread" },
+            { name: "Garlic Baguette", cat: "Pizza & Garlic Bread" },
+            { name: "Garlic Slices", cat: "Pizza & Garlic Bread" },
+            { name: "Meat Feast Pizza", cat: "Pizza & Garlic Bread" },
+
+            // Desserts & Ice Cream
+            { name: "Viennetta Vanilla", cat: "Desserts & Ice Cream" },
+            { name: "Magnum Classic Ice Creams", cat: "Desserts & Ice Cream" },
+            { name: "Bernard Matthews Jam Roly Poly", cat: "Desserts & Ice Cream" },
+            { name: "Apple Crumble", cat: "Desserts & Ice Cream" },
+            { name: "Chocolate Gateau", cat: "Desserts & Ice Cream" },
+            { name: "Profiteroles", cat: "Desserts & Ice Cream" },
+            { name: "Vanilla Ice Cream Tub", cat: "Desserts & Ice Cream" },
+            { name: "Frozen Raspberries & Blueberries", cat: "Desserts & Ice Cream" },
+
+            // Breakfast & Bakery
+            { name: "Frozen Croissants", cat: "Breakfast & Bakery" },
+            { name: "Pain au Chocolat", cat: "Breakfast & Bakery" },
+            { name: "Frozen Crumpets", cat: "Breakfast & Bakery" },
+            { name: "Sliced White Bread", cat: "Breakfast & Bakery" },
+
+            // Party Food & Snacks
+            { name: "Cocktail Sausage Rolls", cat: "Party Food & Snacks" },
+            { name: "Mozzarella Sticks", cat: "Party Food & Snacks" },
+            { name: "Duck Spring Rolls", cat: "Party Food & Snacks" },
+            { name: "Mini Indian Selection (Samosas & Bhajis)", cat: "Party Food & Snacks" },
+            { name: "Onion Rings", cat: "Party Food & Snacks" }
+        ];
+
+        const STORAGE_KEY = 'frostkeeper_uk_items_v2';
+        const SHOPPING_KEY = 'frostkeeper_uk_shopping_v2';
+        
+        let inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let shoppingList = JSON.parse(localStorage.getItem(SHOPPING_KEY)) || [];
+        let currentTab = 'all-items-page';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateAdded').value = today;
+            updateStats();
+            renderCurrentPage();
+
+            // Hide autocomplete on click outside
+            document.addEventListener('click', (e) => {
+                const menu = document.getElementById('autocompleteMenu');
+                const input = document.getElementById('foodNameInput');
+                if (menu && !menu.contains(e.target) && e.target !== input) {
+                    menu.classList.add('hidden');
+                }
+            });
+        });
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+            localStorage.setItem(SHOPPING_KEY, JSON.stringify(shoppingList));
+            updateStats();
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.page-view').forEach(page => page.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.className = "nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap text-slate-700 bg-white hover:bg-slate-200 border-2 border-slate-300 font-display tracking-wide";
+            });
+
+            const activeBtn = document.getElementById('tab-' + tabId);
+            if (activeBtn) {
+                activeBtn.className = "nav-tab fun-btn px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black transition flex items-center space-x-2.5 whitespace-nowrap bg-sky-500 text-white shadow border-2 border-sky-600 font-display tracking-wide";
+            }
+
+            if (tabId === 'meals-page') generateMealSuggestions();
+            if (tabId === 'shopping-page') renderShoppingList();
+
+            renderCurrentPage();
+        }
+
+        // Handle Autocomplete Suggestions
+        function handleFoodInput(e) {
+            const val = e.target.value.toLowerCase().trim();
+            const menu = document.getElementById('autocompleteMenu');
+            if (!menu) return;
+
+            if (val.length < 1) {
+                menu.classList.add('hidden');
+                return;
+            }
+
+            const matches = UK_FREEZER_ITEMS.filter(item => item.name.toLowerCase().includes(val));
+
+            if (matches.length === 0) {
+                menu.classList.add('hidden');
+                return;
+            }
+
+            menu.innerHTML = matches.map(item => `
+                <div onclick="selectAutocomplete('${item.name.replace(/'/g, "\\'")}', '${item.cat}')" 
+                     class="px-4 py-3 hover:bg-sky-50 cursor-pointer flex items-center justify-between transition">
+                    <span class="font-bold text-slate-800 text-sm sm:text-base">${item.name}</span>
+                    <span class="text-xs font-black text-sky-600 bg-sky-100 px-2.5 py-1 rounded-xl">${item.cat}</span>
+                </div>
+            `).join('');
+
+            menu.classList.remove('hidden');
+        }
+
+        function selectAutocomplete(name, cat) {
+            document.getElementById('foodNameInput').value = name;
+            document.getElementById('foodCategory').value = cat;
+            document.getElementById('autocompleteMenu').classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('itemId').value || Date.now().toString();
+            const name = document.getElementById('foodNameInput').value.trim();
+            const category = document.getElementById('foodCategory').value;
+            const isHomemade = document.getElementById('isHomemade').checked;
+            const cookedDate = document.getElementById('cookedDate').value;
+            const freezer = document.querySelector('input[name="freezerType"]:checked').value;
+            const drawer = document.getElementById('drawerNote').value.trim();
+            const status = document.getElementById('packageStatus').value;
+            const quantity = parseInt(document.getElementById('itemQuantity').value) || 1;
+            const dateAdded = document.getElementById('dateAdded').value;
+            const expiryDate = document.getElementById('expiryDate').value;
+
+            const existingIndex = inventory.findIndex(item => item.id === id);
+            const itemData = { id, name, category, isHomemade, cookedDate, freezer, drawer, status, quantity, dateAdded, expiryDate };
+
+            if (existingIndex > -1) {
+                inventory[existingIndex] = itemData;
+            } else {
+                inventory.unshift(itemData);
+            }
+
+            saveData();
+            resetForm();
+            switchTab('all-items-page');
+        }
+
+        function editItem(id) {
+            const item = inventory.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('itemId').value = item.id;
+            document.getElementById('foodNameInput').value = item.name;
+            document.getElementById('foodCategory').value = item.category;
+            document.getElementById('isHomemade').checked = item.isHomemade || false;
+            document.getElementById('cookedDate').value = item.cookedDate || '';
+            document.getElementById('drawerNote').value = item.drawer || '';
+            document.getElementById('packageStatus').value = item.status;
+            document.getElementById('itemQuantity').value = item.quantity;
+            document.getElementById('dateAdded').value = item.dateAdded;
+            document.getElementById('expiryDate').value = item.expiryDate || '';
+
+            const radio = document.querySelector(`input[name="freezerType"][value="${item.freezer}"]`);
+            if (radio) radio.checked = true;
+
+            toggleHomemadeFields();
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-sky-600"></i> Edit ${item.name}`;
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+            switchTab('add-item-page');
+        }
+
+        function adjustQuantity(id, delta) {
+            const item = inventory.find(i => i.id === id);
+            if (!item) return;
+
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                piggedIt(id);
+            } else {
+                saveData();
+                renderCurrentPage();
+            }
+        }
+
+        function piggedIt(id) {
+            const item = inventory.find(i => i.id === id);
+            if (!item) return;
+
+            if (confirm(`Pigged it all! Mark "${item.name}" as finished?`)) {
+                if (!shoppingList.some(s => s.name.toLowerCase() === item.name.toLowerCase())) {
+                    shoppingList.push({ id: Date.now().toString(), name: item.name, checked: false });
+                }
+                inventory = inventory.filter(i => i.id !== id);
+                saveData();
+                renderCurrentPage();
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemId').value = '';
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-plus-circle text-sky-600"></i> Add Freezer Grub`;
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            document.getElementById('dateAdded').value = new Date().toISOString().split('T')[0];
+            document.getElementById('autocompleteMenu').classList.add('hidden');
+            toggleHomemadeFields();
+        }
+
+        function toggleHomemadeFields() {
+            const isChecked = document.getElementById('isHomemade').checked;
+            const fields = document.getElementById('homemadeFields');
+            if (isChecked) {
+                fields.classList.remove('hidden');
+                document.getElementById('cookedDate').value = new Date().toISOString().split('T')[0];
+            } else {
+                fields.classList.add('hidden');
+            }
+        }
+
+        function clearFoodInput() {
+            document.getElementById('foodNameInput').value = '';
+            document.getElementById('autocompleteMenu').classList.add('hidden');
+        }
+
+        function handleStatusChange() {
+            const status = document.getElementById('packageStatus').value;
+            const label = document.getElementById('quantityLabel');
+            label.innerText = status === 'Portions Left' ? 'Portions Remaining' : 'Quantity / Pack Count';
+        }
+
+        function updateStats() {
+            document.getElementById('statTotalItems').innerText = inventory.length;
+            document.getElementById('badgeAllCount').innerText = inventory.length;
+
+            const tallCount = inventory.filter(i => i.freezer === 'Tall Freezer').length;
+            document.getElementById('statTallCount').innerText = tallCount;
+            document.getElementById('badgeTallCount').innerText = tallCount;
+
+            const chestCount = inventory.filter(i => i.freezer === 'Chest Freezer').length;
+            document.getElementById('statChestCount').innerText = chestCount;
+            document.getElementById('badgeChestCount').innerText = chestCount;
+
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            const agingCount = inventory.filter(i => new Date(i.dateAdded) < sixMonthsAgo).length;
+            document.getElementById('statAgingCount').innerText = agingCount;
+
+            document.getElementById('badgeShopCount').innerText = shoppingList.filter(s => !s.checked).length;
+        }
+
+        function getFilteredItems() {
+            const search = document.getElementById('globalSearch').value.toLowerCase().trim();
+            const catFilter = document.getElementById('filterCategory').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const sortBy = document.getElementById('sortBy').value;
+
+            return inventory.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(search) || 
+                                      (item.drawer && item.drawer.toLowerCase().includes(search)) ||
+                                      item.category.toLowerCase().includes(search);
+                const matchesCat = catFilter === 'ALL' || item.category === catFilter;
+                const matchesStatus = statusFilter === 'ALL' || 
+                                      (statusFilter === 'Homemade' ? item.isHomemade : item.status === statusFilter);
+
+                return matchesSearch && matchesCat && matchesStatus;
+            }).sort((a, b) => {
+                if (sortBy === 'dateDesc') return new Date(b.dateAdded) - new Date(a.dateAdded);
+                if (sortBy === 'dateAsc') return new Date(a.dateAdded) - new Date(b.dateAdded);
+                if (sortBy === 'nameAsc') return a.name.localeCompare(b.name);
+                if (sortBy === 'expiryAsc') {
+                    if (!a.expiryDate) return 1;
+                    if (!b.expiryDate) return -1;
+                    return new Date(a.expiryDate) - new Date(b.expiryDate);
+                }
+                return 0;
+            });
+        }
+
+        function renderCurrentPage() {
+            const items = getFilteredItems();
+
+            if (currentTab === 'all-items-page') {
+                renderCards('allItemsContainer', items);
+            } else if (currentTab === 'tall-freezer-page') {
+                renderCards('tallFreezerContainer', items.filter(i => i.freezer === 'Tall Freezer'));
+            } else if (currentTab === 'chest-freezer-page') {
+                renderCards('chestFreezerContainer', items.filter(i => i.freezer === 'Chest Freezer'));
+            } else if (currentTab === 'category-page') {
+                renderCategories(items);
+            }
+        }
+
+        function renderCards(containerId, itemsList) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (itemsList.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-300 p-8">
+                        <i class="fa-solid fa-snowflake text-4xl text-sky-300 mb-3"></i>
+                        <p class="text-xl font-extrabold font-display text-slate-700">No Food Found!</p>
+                        <p class="text-sm font-bold text-slate-500 mt-1">Try clearing filters or add new grub to your freezer.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = itemsList.map(item => {
+                const isChest = item.freezer === 'Chest Freezer';
+                const badgeColor = isChest ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-sky-100 text-sky-800 border-sky-300';
+                const icon = isChest ? 'fa-box text-purple-600' : 'fa-door-closed text-sky-600';
+
+                return `
+                    <div class="fun-card rounded-3xl p-5 flex flex-col justify-between space-y-4 relative">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <span class="px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border ${badgeColor} flex items-center gap-1.5">
+                                    <i class="fa-solid ${icon}"></i> ${item.freezer}
+                                </span>
+                                ${item.drawer ? `<span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-300"><i class="fa-solid fa-layer-group"></i> ${item.drawer}</span>` : ''}
+                            </div>
+
+                            <h3 class="text-xl font-black font-display text-slate-900 leading-snug">${item.name}</h3>
+                            <p class="text-xs font-bold text-slate-500 mt-0.5">${item.category}</p>
+
+                            <div class="mt-4 flex flex-wrap gap-2 text-xs font-bold">
+                                <span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-800 border border-slate-200">
+                                    ${item.status === 'Portions Left' ? '🍽️ Portions' : '📦 Unopened'}
+                                </span>
+                                ${item.isHomemade ? `<span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300">🧑‍🍳 Homemade</span>` : ''}
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs font-bold text-slate-600">
+                                <div>
+                                    <span class="block text-[10px] uppercase font-black text-slate-400">Frozen On</span>
+                                    <span>${item.dateAdded}</span>
+                                </div>
+                                ${item.expiryDate ? `
+                                <div>
+                                    <span class="block text-[10px] uppercase font-black text-slate-400">Use By</span>
+                                    <span class="${new Date(item.expiryDate) < new Date() ? 'text-red-600 font-black' : ''}">${item.expiryDate}</span>
+                                </div>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center space-x-2 bg-slate-100 p-1 rounded-2xl border border-slate-300">
+                                <button onclick="adjustQuantity('${item.id}', -1)" class="w-8 h-8 rounded-xl bg-white hover:bg-slate-200 text-slate-800 font-black text-base shadow-sm flex items-center justify-center">-</button>
+                                <span class="px-2 font-black font-display text-lg text-slate-900">${item.quantity}</span>
+                                <button onclick="adjustQuantity('${item.id}', 1)" class="w-8 h-8 rounded-xl bg-white hover:bg-slate-200 text-slate-800 font-black text-base shadow-sm flex items-center justify-center">+</button>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <button onclick="piggedIt('${item.id}')" class="fun-btn px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs font-display rounded-xl shadow flex items-center gap-1" title="Mark as finished">
+                                    <i class="fa-solid fa-piggy-bank"></i> Pigged It!
+                                </button>
+                                <button onclick="editItem('${item.id}')" class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-300 text-xs font-bold" title="Edit">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCategories(items) {
+            const container = document.getElementById('categoryContainer');
+            const categories = [...new Set(inventory.map(i => i.category))];
+
+            if (categories.length === 0) {
+                container.innerHTML = `
+                    <div class="py-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-300 p-8">
+                        <p class="text-xl font-extrabold font-display text-slate-700">No Categories Found!</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = categories.map(cat => {
+                const catItems = items.filter(i => i.category === cat);
+                if (catItems.length === 0) return '';
+
+                return `
+                    <div class="bg-white rounded-3xl p-6 border-2 border-slate-300 shadow-sm space-y-4">
+                        <h3 class="text-xl font-black font-display text-slate-900 flex items-center justify-between pb-3 border-b-2 border-slate-100">
+                            <span>${cat}</span>
+                            <span class="px-3 py-1 bg-slate-100 text-slate-700 font-bold rounded-full text-xs">${catItems.length} items</span>
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            ${catItems.map(item => `
+                                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                                    <div>
+                                        <p class="font-extrabold text-slate-900">${item.name}</p>
+                                        <p class="text-xs font-bold text-slate-500">${item.freezer} ${item.drawer ? '• ' + item.drawer : ''}</p>
+                                    </div>
+                                    <span class="px-3 py-1 bg-sky-500 text-white font-black font-display rounded-xl text-sm">${item.quantity}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Smart Dinners Generator combining Freezer Items & Store-Cupboard Staples
+        function generateMealSuggestions() {
+            const container = document.getElementById('mealSuggestionsContainer');
+            if (!container) return;
+
+            if (inventory.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-300 p-8">
+                        <i class="fa-solid fa-utensils text-4xl text-rose-300 mb-3"></i>
+                        <p class="text-xl font-extrabold font-display text-slate-700">Your Freezer is Empty!</p>
+                        <p class="text-sm font-bold text-slate-500 mt-1">Add some sausages, fish, chips, or veggies to generate classic British dinner ideas.</p>
+                    </div>`;
+                return;
+            }
+
+            const hasItem = (keywords) => {
+                return inventory.filter(item => {
+                    const name = item.name.toLowerCase();
+                    return keywords.some(kw => name.includes(kw.toLowerCase()));
+                });
+            };
+
+            const suggestions = [];
+
+            // 1. Full English Fry-Up / All-Day Breakfast
+            const breakfastMeats = hasItem(['sausage', 'bacon', 'black pudding', 'turkey dinosaur']);
+            const breakfastCarbs = hasItem(['hash brown', 'waffle']);
+            if (breakfastMeats.length > 0 || breakfastCarbs.length > 0) {
+                const freezerUsed = [...breakfastMeats, ...breakfastCarbs].map(i => i.name);
+                suggestions.push({
+                    title: "Full English Fry-Up / All-Day Breakfast 🍳",
+                    desc: "A hearty British classic! Fry or oven-bake your frozen sausages and hash browns, then pair with fresh cooked eggs and warm cupboard beans.",
+                    icon: "fa-egg text-amber-500",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Eggs (Fried/Poached/Scrambled)", "Tinned Baked Beans or Tomatoes", "Fresh Mushrooms", "Toast & Butter"]
+                });
+            }
+
+            // 2. Fish & Chips Supper
+            const fishItems = hasItem(['fish', 'cod', 'haddock', 'scampi']);
+            const chipItems = hasItem(['chip', 'fries', 'potato']);
+            const peaItems = hasItem(['pea', 'petit pois']);
+            if (fishItems.length > 0 || chipItems.length > 0) {
+                const freezerUsed = [...fishItems, ...chipItems, ...peaItems].map(i => i.name);
+                suggestions.push({
+                    title: "Friday Fish & Chips Supper 🐟🍟",
+                    desc: "Crispy oven-baked fish fillets with chunky chips and green peas. Bring out the vinegar, salt, and bread for chip sarnies!",
+                    icon: "fa-fish text-sky-500",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Tartare Sauce or Ketchup", "Malt Vinegar", "Sliced Bread & Butter (for Chip Butties)"]
+                });
+            }
+
+            // 3. Bangers & Mash with Onion Gravy
+            const sausages = hasItem(['sausage']);
+            if (sausages.length > 0) {
+                const vegSide = hasItem(['pea', 'onion', 'veg']);
+                const freezerUsed = [...sausages, ...vegSide].map(i => i.name);
+                suggestions.push({
+                    title: "Bangers & Mash with Rich Gravy 🌭🥔",
+                    desc: "Sizzling pork or veggie sausages served over smooth mashed potatoes, smothered in hot gravy with sweet peas.",
+                    icon: "fa-bowl-food text-amber-600",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Potatoes or Instant Mash", "Gravy Granules (Bisto)", "Fresh Onions", "Butter & Milk"]
+                });
+            }
+
+            // 4. Curry Night
+            const curryMeats = hasItem(['chicken', 'turkey', 'lamb', 'prawn']);
+            if (curryMeats.length > 0) {
+                const vegSide = hasItem(['pea', 'spinach', 'veg']);
+                const freezerUsed = [...curryMeats, ...vegSide].map(i => i.name);
+                suggestions.push({
+                    title: "Midweek Curry Night 🍛",
+                    desc: "Simmer your frozen chicken or prawns in curry sauce or paste, tossed with spinach or peas and served with basmati rice.",
+                    icon: "fa-pepper-hot text-rose-500",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Curry Sauce Jar / Paste", "Basmati Rice", "Naan Bread / Poppadoms", "Mango Chutney"]
+                });
+            }
+
+            // 5. Pasta Bake / Spaghetti Bolognese
+            const minceOrMeatballs = hasItem(['mince', 'minced', 'meatball', 'beef']);
+            if (minceOrMeatballs.length > 0) {
+                const vegSide = hasItem(['onion', 'pepper', 'veg']);
+                const freezerUsed = [...minceOrMeatballs, ...vegSide].map(i => i.name);
+                suggestions.push({
+                    title: "Pasta Bake or Spaghetti Bolognese 🍝",
+                    desc: "Brown your frozen minced beef or meatballs into a rich tomato garlic sauce, cooked over pasta and topped with melted cheddar.",
+                    icon: "fa-utensils text-red-500",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Dried Pasta or Spaghetti", "Tinned Chopped Tomatoes or Passata", "Garlic & Herbs", "Cheddar Cheese"]
+                });
+            }
+
+            // 6. Pie & Mash Feast
+            const pies = hasItem(['pie', 'pasty']);
+            if (pies.length > 0) {
+                const vegSide = hasItem(['pea', 'carrot', 'veg']);
+                const freezerUsed = [...pies, ...vegSide].map(i => i.name);
+                suggestions.push({
+                    title: "Comforting Pie & Mash 🥧",
+                    desc: "Golden baked pastry pie served alongside fluffy mash, steamy garden peas, and plenty of onion gravy.",
+                    icon: "fa-pie-chart text-amber-700",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Potatoes / Instant Mash", "Gravy Granules", "Butter"]
+                });
+            }
+
+            // 7. Pizza & Garlic Bread Night
+            const pizzas = hasItem(['pizza', 'garlic bread']);
+            if (pizzas.length > 0) {
+                const freezerUsed = pizzas.map(i => i.name);
+                suggestions.push({
+                    title: "Pizza & Garlic Bread Feast 🍕",
+                    desc: "Oven-bake your favorite frozen pizza and garlic slices for a quick weekend treat. Serve with fresh side salad and dips.",
+                    icon: "fa-pizza-slice text-amber-500",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Fresh Side Salad / Coleslaw", "Garlic Herb Dip / Ketchup", "Soft Drinks"]
+                });
+            }
+
+            // 8. Homemade Soup & Warm Crusty Roll
+            const soupsOrVeg = hasItem(['soup', 'veg', 'broth', 'spinach', 'carrot']);
+            const bakery = hasItem(['bread', 'roll', 'baguette']);
+            if (soupsOrVeg.length > 0 || bakery.length > 0) {
+                const freezerUsed = [...soupsOrVeg, ...bakery].map(i => i.name);
+                suggestions.push({
+                    title: "Warming Soup & Warm Roll 🍲",
+                    desc: "Reheat batch-cooked homemade soup or simmer frozen mixed vegetables with a stock cube. Serve with hot buttered crusty rolls.",
+                    icon: "fa-bowl-rice text-emerald-600",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Vegetable / Chicken Stock Cubes", "Butter / Spread", "Black Pepper & Herbs"]
+                });
+            }
+
+            // 9. Taco / Fajita / Wrap Night
+            const chickenStrips = hasItem(['chicken', 'strips', 'dippers', 'mince']);
+            if (chickenStrips.length > 0) {
+                const freezerUsed = chickenStrips.map(i => i.name);
+                suggestions.push({
+                    title: "Crispy Fajita / Taco Wrap Night 🌮",
+                    desc: "Cook crispy chicken strips or seasoned mince, slice into soft warm tortilla wraps, and top with cheese, salsa and salad.",
+                    icon: "fa-layer-group text-amber-600",
+                    freezerItems: [...new Set(freezerUsed)],
+                    cupboardItems: ["Tortilla Wraps", "Grated Cheddar Cheese", "Salsa / Sour Cream", "Shredded Lettuce"]
+                });
+            }
+
+            // Fallback general suggestion if custom items don't match strict rules
+            if (suggestions.length === 0) {
+                const firstFew = inventory.slice(0, 3).map(i => i.name);
+                suggestions.push({
+                    title: "Custom Freezer & Pantry Mix 🍽️",
+                    desc: `Combine your frozen ${firstFew.join(', ')} with everyday pantry staples like rice, pasta, eggs, or gravy for a meal!`,
+                    icon: "fa-kitchen-set text-sky-600",
+                    freezerItems: firstFew,
+                    cupboardItems: ["Eggs", "Rice / Pasta", "Gravy / Sauces", "Bread / Butter"]
+                });
+            }
+
+            container.innerHTML = suggestions.map(s => `
+                <div class="bg-white rounded-3xl p-6 border-2 border-slate-300 shadow-sm flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-2xl flex-shrink-0">
+                                <i class="fa-solid ${s.icon}"></i>
+                            </div>
+                            <h3 class="text-xl font-black font-display text-slate-900 leading-tight">${s.title}</h3>
+                        </div>
+
+                        <p class="text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">${s.desc}</p>
+
+                        <!-- From Freezer Badge -->
+                        <div class="p-3 bg-sky-50 rounded-2xl border border-sky-200 space-y-1.5">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-sky-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-snowflake text-sky-600"></i> From Your Freezer:
+                            </span>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${s.freezerItems.map(item => `
+                                    <span class="px-2.5 py-1 bg-white text-sky-900 border border-sky-300 rounded-xl text-xs font-black shadow-sm">${item}</span>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- From Cupboard / Fridge Badge -->
+                        <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-1.5">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-box-open text-amber-600"></i> You'll Need from Cupboard / Fridge:
+                            </span>
+                            <ul class="list-disc list-inside text-xs font-bold text-slate-700 space-y-1">
+                                ${s.cupboardItems.map(c => `<li>${c}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderShoppingList() {
+            const container = document.getElementById('shoppingListContainer');
+            if (shoppingList.length === 0) {
+                container.innerHTML = `<div class="py-8 text-center text-slate-400 font-bold">Shopping list is completely empty!</div>`;
+                return;
+            }
+
+            container.innerHTML = shoppingList.map(item => `
+                <div class="py-3 flex items-center justify-between">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShopCheck('${item.id}')"
+                            class="w-5 h-5 rounded-lg border-2 border-slate-300 text-emerald-600 focus:ring-0">
+                        <span class="font-extrabold text-base ${item.checked ? 'line-through text-slate-400' : 'text-slate-800'}">${item.name}</span>
+                    </label>
+                    <button onclick="removeShopItem('${item.id}')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function addCustomShopItem() {
+            const input = document.getElementById('customShopInput');
+            const name = input.value.trim();
+            if (!name) return;
+
+            shoppingList.push({ id: Date.now().toString(), name, checked: false });
+            input.value = '';
+            saveData();
+            renderShoppingList();
+        }
+
+        function toggleShopCheck(id) {
+            const item = shoppingList.find(s => s.id === id);
+            if (item) {
+                item.checked = !item.checked;
+                saveData();
+                renderShoppingList();
+            }
+        }
+
+        function removeShopItem(id) {
+            shoppingList = shoppingList.filter(s => s.id !== id);
+            saveData();
+            renderShoppingList();
+        }
+
+        function copyShoppingList() {
+            const text = shoppingList.map(s => `${s.checked ? '[x]' : '[ ]'} ${s.name}`).join('\n');
+            navigator.clipboard.writeText(text).then(() => alert('Shopping list copied to clipboard!'));
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ inventory, shoppingList }));
+            const anchor = document.createElement('a');
+            anchor.setAttribute("href", dataStr);
+            anchor.setAttribute("download", `frostkeeper_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.inventory) {
+                        inventory = imported.inventory;
+                        shoppingList = imported.shoppingList || [];
+                        saveData();
+                        renderCurrentPage();
+                        alert('Data imported successfully!');
+                    }
+                } catch(err) {
+                    alert('Invalid JSON file format!');
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
